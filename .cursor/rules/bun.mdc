@@ -1,0 +1,85 @@
+---
+alwaysApply: true
+---
+
+# Bun Rules
+
+## Package Manager Preference
+
+**Always use Bun instead of npm/pnpm/node** for all package management and script execution tasks in this project.
+
+### Commands to Use
+
+- **Package Installation**: Use `bun install` (or `bun i`) instead of `npm install` or `pnpm install`
+- **Adding Dependencies**: Use `bun add <package>` (or `bun a <package>`) instead of `npm install <package>` or `pnpm add <package>`
+- **Adding Dev Dependencies**: Use `bun add -d <package>` instead of `npm install --save-dev <package>` or `pnpm add -D <package>`
+- **Script Execution**: Use `bun run <script>` or `bun <script>` instead of `npm run <script>` or `pnpm run <script>`
+- **Package Removal**: Use `bun remove <package>` (or `bun rm <package>`) instead of `npm uninstall <package>` or `pnpm remove <package>`
+- **Execute Package Binaries**: Use `bun x <package>` (or `bunx <package>`) instead of `npx <package>` or `pnpm exec <package>`
+- **Running Tests**: Use `bun test` instead of `npm test` or `pnpm test`
+
+### Project Configuration
+
+This project uses Bun as evidenced by:
+- The presence of [bun.lockb](mdc:bun.lockb) (lockfile)
+- The [package.json](mdc:package.json) is configured for bun usage
+
+### Examples
+
+```bash
+# ✅ Correct - Use bun
+bun install          # or: bun i
+bun add react        # or: bun a react
+bun add -d typescript
+bun run dev
+bun run build
+bun dev              # Also valid - bun can run scripts directly
+bun x vite           # Execute package binaries (or: bunx vite)
+bun test             # Run tests
+
+# ❌ Incorrect - Don't use npm/pnpm/node
+npm install
+npm install react
+npm install --save-dev typescript
+npm run dev
+npm run build
+npx vite
+pnpm install
+pnpm add react
+pnpm run dev
+pnpm exec vite
+node scripts/build.js
+```
+
+## Auto-fix After File Changes
+
+After creating, editing, or modifying any files in the codebase, you MUST run `bun run fix` to ensure code quality and consistency.
+
+### When to apply this rule
+- After creating new files
+- After editing existing files
+- After modifying any source code
+- After making changes to configuration files
+- After any code generation or refactoring
+
+### Implementation
+1. Complete your file creation/modification tasks
+2. Run the command: `bun run fix`
+3. Address any issues that arise from the fix command
+4. Confirm the fix was successful
+
+### Example workflow
+```bash
+# After making changes to files
+bun run fix
+```
+
+### Important notes
+- Ensures consistent code formatting and linting
+- Catches potential issues early
+- Maintains code quality standards across the project
+- Should be run even for minor changes to maintain consistency
+
+### Exceptions
+- Only skip this step if the user explicitly requests not to run it
+- If `bun run fix` fails, report the error and ask for guidance

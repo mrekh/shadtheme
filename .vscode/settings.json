@@ -1,0 +1,23 @@
+{
+	"editor.defaultFormatter": "esbenp.prettier-vscode",
+	"editor.codeActionsOnSave": {
+		"source.fixAll.eslint": "always",
+		"source.organizeImports": "always"
+	},
+	"editor.formatOnSave": true,
+	"editor.formatOnPaste": true,
+	"files.associations": {
+		"*.css": "tailwindcss"
+	},
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"workbench.colorCustomizations": {
+		"titleBar.activeBackground": "#8A00C4",
+		"titleBar.activeForeground": "#ffffff"
+	},
+	"workbench.editor.customLabels.patterns": {
+		"**/app/**/*.tsx": "${dirname} - ${filename}",
+		"**/app/**/page.tsx": "${dirname} - Page",
+		"**/app/**/layout.tsx": "${dirname} - Layout",
+		"**/components/**/index.tsx": "${dirname} - Component"
+	}
+}

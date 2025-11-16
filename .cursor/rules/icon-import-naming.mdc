@@ -1,0 +1,60 @@
+---
+description: Import icon components with names that end in `Icon` directly
+globs: **/*.tsx,**/*.jsx
+alwaysApply: false
+---
+
+# Icon Import Naming Convention
+
+## Rule
+Prefer importing icon components with names that end in `Icon` directly. If a library does not provide an `Icon`-suffixed export, import the base component and alias it with `as` to add the `Icon` suffix.
+
+## Examples
+
+### ✅ Correct Usage
+```typescript
+// Lucide (provides Icon-suffixed exports)
+import { Loader2Icon, Trash2Icon } from 'lucide-react';
+
+// Radix UI Icons
+import { RocketIcon } from '@radix-ui/react-icons';
+
+// Heroicons
+import { HomeIcon } from '@heroicons/react/24/outline';
+
+// React Icons (fallback: alias to add Icon suffix when direct doesn't exist)
+import { FaSearch as FaSearchIcon } from 'react-icons/fa';
+
+// Optional: Local re-exports for consistency across the codebase
+import { FaTimesIcon } from '@/components/icons';
+```
+
+### ❌ Incorrect Usage
+```typescript
+// Missing Icon suffix
+import { Loader2 } from 'lucide-react';
+import { Home } from '@heroicons/react/24/outline';
+import { FaSearch } from 'react-icons/fa';
+
+// Unnecessary aliasing when direct Icon-suffixed export exists
+import { Loader2 as Loader2Icon } from 'lucide-react';
+```
+
+## Rationale
+- Provides consistent naming convention across the codebase
+- Makes it immediately clear in the code that a component is an icon
+- Prevents naming conflicts with other components or variables
+- Improves code readability and maintainability
+
+## Scope
+This rule applies to all icon imports regardless of the package:
+- Lucide React
+- Radix UI Icons
+- Heroicons
+- React Icons
+- Any other icon library
+
+### Notes
+- For libraries that provide Icon-suffixed exports (e.g., `lucide-react`, `@radix-ui/react-icons`, `@heroicons/react`), import those directly without aliasing.
+- If a library does not provide Icon-suffixed exports (e.g., some `react-icons` packs), import the base component and alias it with `as` to add the `Icon` suffix.
+- Optionally, add named re-exports with the `Icon` suffix in `src/components/icons.ts` to centralize naming and avoid repeated aliasing.
