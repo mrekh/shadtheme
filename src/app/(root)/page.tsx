@@ -70,7 +70,7 @@ export default function HomePage() {
 					>
 						Byte
 					</a>
-					. The SE platform for the GEO-era.
+					, The GEO tool SEO teams need.
 				</SectionContainer>
 			</footer>
 		</div>

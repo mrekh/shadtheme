@@ -22,4 +22,4 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 
 ---
 
-Built with 💙 by [Byte](https://www.trybyte.app). The SEO platform for the GEO-era.
+Built with 💙 by [Byte](https://www.trybyte.app), The GEO tool SEO teams need.
