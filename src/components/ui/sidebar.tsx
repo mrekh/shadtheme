@@ -61,13 +61,11 @@ function SidebarProvider({
 	className,
 	style,
 	children,
-	disableKeyboardShortcut = false,
 	...props
 }: React.ComponentProps<"div"> & {
 	defaultOpen?: boolean;
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
-	disableKeyboardShortcut?: boolean;
 }) {
 	const isMobile = useIsMobile();
 	const [openMobile, setOpenMobile] = React.useState(false);
@@ -98,10 +96,6 @@ function SidebarProvider({
 
 	// Adds a keyboard shortcut to toggle the sidebar.
 	React.useEffect(() => {
-		if (disableKeyboardShortcut) {
-			return;
-		}
-
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (
 				event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
@@ -114,7 +108,7 @@ function SidebarProvider({
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [toggleSidebar, disableKeyboardShortcut]);
+	}, [toggleSidebar]);
 
 	// We add a state so that we can do data-state="expanded" or "collapsed".
 	// This makes it easier to style the sidebar with Tailwind classes.
@@ -251,12 +245,7 @@ function Sidebar({
 				<div
 					data-sidebar="sidebar"
 					data-slot="sidebar-inner"
-					className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
-					style={
-						{
-							borderRadius: "var(--radius, 0.5rem)",
-						} as React.CSSProperties
-					}
+					className="bg-sidebar group-data-[variant=floating]:border-sidebar-border flex h-full w-full flex-col group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:shadow-sm"
 				>
 					{children}
 				</div>
@@ -619,9 +608,9 @@ function SidebarMenuSkeleton({
 	showIcon?: boolean;
 }) {
 	// Random width between 50 to 90%.
-	const width = React.useState(
-		() => `${Math.floor(Math.random() * 40) + 50}%`,
-	)[0];
+	const width = React.useMemo(() => {
+		return `${Math.floor(Math.random() * 40) + 50}%`;
+	}, []);
 
 	return (
 		<div
