@@ -1,12 +1,32 @@
+import { APCAcontrast, sRGBtoY } from "apca-w3";
+import { converter } from "culori";
+
 import { type LocalOklch, clampOklch } from "../color-spaces";
 import type { ContrastResult } from "./types";
 
+const toRgb = converter("rgb");
+
 /**
- * Calculate relative luminance from OKLCH lightness
- * OKLCH L is already perceptually uniform
+ * Calculate relative luminance per WCAG 2.1 specification
+ * Converts from OKLCH to sRGB and applies the proper luminance formula
+ * @see https://www.w3.org/WAI/GL/wiki/Relative_luminance
  */
 function getLuminance(color: LocalOklch): number {
-	return color.l;
+	const rgb = toRgb(color);
+	if (!rgb) return 0;
+
+	// WCAG 2.1 relative luminance formula
+	// First linearize each sRGB channel
+	const linearize = (c: number): number => {
+		return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+	};
+
+	const r = linearize(rgb.r ?? 0);
+	const g = linearize(rgb.g ?? 0);
+	const b = linearize(rgb.b ?? 0);
+
+	// Then apply luminance coefficients
+	return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 /**
@@ -27,17 +47,45 @@ export function calculateContrastRatio(
 
 /**
  * Calculate APCA (Advanced Perceptual Contrast Algorithm) contrast
- * Simplified version - full APCA is more complex
+ * Uses the official apca-w3 library for accurate Lc (lightness contrast) values
+ * Returns absolute Lc value (0-105+, higher = more contrast)
  */
 export function calculateAPCA(
 	foreground: LocalOklch,
 	background: LocalOklch,
 ): number {
-	const l1 = getLuminance(foreground);
-	const l2 = getLuminance(background);
+	try {
+		// Convert OKLCH to sRGB
+		const fgRgb = toRgb(foreground);
+		const bgRgb = toRgb(background);
 
-	const delta = Math.abs(l1 - l2);
-	return delta * 100;
+		if (!fgRgb || !bgRgb) return 0;
+
+		// Convert to 0-255 range for sRGBtoY
+		const fgArray: [number, number, number] = [
+			Math.round((fgRgb.r ?? 0) * 255),
+			Math.round((fgRgb.g ?? 0) * 255),
+			Math.round((fgRgb.b ?? 0) * 255),
+		];
+		const bgArray: [number, number, number] = [
+			Math.round((bgRgb.r ?? 0) * 255),
+			Math.round((bgRgb.g ?? 0) * 255),
+			Math.round((bgRgb.b ?? 0) * 255),
+		];
+
+		// Calculate luminances
+		const fgY = sRGBtoY(fgArray);
+		const bgY = sRGBtoY(bgArray);
+
+		// Calculate APCA contrast - returns Lc with polarity
+		const contrast = APCAcontrast(fgY, bgY);
+
+		// Return absolute value for easier comparison
+		return Math.abs(Number(contrast));
+	} catch {
+		// Fallback to simplified calculation if APCA fails
+		return Math.abs(foreground.l - background.l) * 100;
+	}
 }
 
 /**

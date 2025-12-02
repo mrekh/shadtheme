@@ -56,9 +56,7 @@ export function ThemeExportPanel() {
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
-						<CardTitle asChild>
-							<h2>Export Theme</h2>
-						</CardTitle>
+						<CardTitle>Export Theme</CardTitle>
 						<CardDescription>
 							Copy contrast-safe CSS variables or individual sections to drop
 							into your design system.

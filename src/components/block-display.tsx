@@ -10,7 +10,18 @@ export function BlockDisplay({
 	style?: React.CSSProperties;
 }) {
 	return (
-		<div className={cn("theme-container mx-auto", className)} style={style}>
+		<div
+			className={cn(
+				"theme-container mx-auto",
+				"bg-card border-border/50 border",
+				"p-4 shadow-sm md:p-6",
+				className,
+			)}
+			style={{
+				borderRadius: "calc(var(--radius) * 1.5)",
+				...style,
+			}}
+		>
 			{children}
 		</div>
 	);

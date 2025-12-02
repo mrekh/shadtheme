@@ -2,12 +2,14 @@ import { RootComponents } from "@/app/(root)/components/root-components";
 import { BlockDisplay } from "@/components/block-display";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { DataTable } from "@/components/data-table";
+import { AnimatedOrb } from "@/components/hero/animated-orb";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { SectionContainer } from "@/components/layout/section-container";
 import { SectionCards } from "@/components/section-cards";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeDesignerPanel } from "@/components/theme-designer-panel";
 import { ThemeExportPanel } from "@/components/theme-export-panel";
+import { Badge } from "@/components/ui/badge";
 
 import data from "./data.json";
 
@@ -17,14 +19,27 @@ export default function HomePage() {
 			{/* Header outside sidebar - full width */}
 			<SiteHeader />
 
-			<SectionContainer className="space-y-4 py-10 text-center">
-				<h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-					Generate more than +100M shadcn UI themes, easily.
-				</h1>
-				<p className="text-muted-foreground text-lg">
-					Pick a color harmony, preview contrast-safe tokens, and ship a
-					polished interface without touching a spreadsheet.
-				</p>
+			{/* Hero Section with animated orb */}
+			<SectionContainer className="relative pt-4 pb-4 text-center md:pt-6 md:pb-6">
+				{/* Animated background orb */}
+				<AnimatedOrb />
+
+				{/* Content overlay */}
+				<div className="relative z-10 -mt-20 space-y-4 md:-mt-24">
+					<Badge
+						variant="secondary"
+						className="mx-auto mb-4 px-3 py-1 text-xs font-medium"
+					>
+						100M+ possible themes
+					</Badge>
+					<h1 className="mx-auto max-w-3xl text-3xl font-bold tracking-tight text-balance sm:text-4xl md:text-5xl">
+						Generate stunning shadcn/ui themes in seconds
+					</h1>
+					<p className="text-muted-foreground mx-auto max-w-2xl text-base text-balance sm:text-lg">
+						Pick a color harmony, preview contrast-safe tokens, and ship a
+						polished interface without touching a spreadsheet.
+					</p>
+				</div>
 			</SectionContainer>
 
 			<main id="main-content" className="flex flex-1 flex-col">
@@ -49,10 +64,7 @@ export default function HomePage() {
 
 				{/* Components showcase section */}
 				<SectionContainer className="py-10">
-					<BlockDisplay
-						className="bg-card border shadow-sm md:p-6"
-						style={{ borderRadius: "calc(var(--radius) * 1.5)" }}
-					>
+					<BlockDisplay>
 						<RootComponents />
 					</BlockDisplay>
 				</SectionContainer>

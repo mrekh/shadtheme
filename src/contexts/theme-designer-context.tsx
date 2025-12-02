@@ -19,7 +19,7 @@ import {
 } from "@/lib/color-engine";
 import { formatOklchCss } from "@/lib/color-spaces";
 
-const DEFAULT_RADIUS = 0.65;
+const DEFAULT_RADIUS = 0.5;
 const DEFAULT_PRIMARY_HEX = "#8b5cf6";
 const DEFAULT_HARMONY: HarmonyType = "complementary";
 const DEFAULT_BACKGROUND_STRATEGY = "neutral";
@@ -48,6 +48,7 @@ export type BackgroundStrategy = "neutral" | "primary";
 
 interface ThemeDesignerInputs {
 	primaryHex: string;
+	secondaryHex: string | null;
 	harmony: HarmonyType;
 	radius: number;
 	backgroundStrategy: BackgroundStrategy;
@@ -56,6 +57,7 @@ interface ThemeDesignerInputs {
 interface AppliedThemeSnapshot {
 	theme: GeneratedTheme | null;
 	primaryHex: string;
+	secondaryHex: string | null;
 	harmony: HarmonyType;
 	radius: number;
 	backgroundStrategy: BackgroundStrategy;
@@ -72,6 +74,7 @@ export interface ThemeDesignerState {
 
 interface ThemeDesignerContextValue {
 	primaryHex: string;
+	secondaryHex: string | null;
 	harmony: HarmonyType;
 	radius: number;
 	backgroundStrategy: BackgroundStrategy;
@@ -83,6 +86,7 @@ interface ThemeDesignerContextValue {
 	error: string | null;
 	hasPendingChanges: boolean;
 	setPrimary: (hex: string) => void;
+	setSecondary: (hex: string | null) => void;
 	setHarmony: (harmony: HarmonyType) => void;
 	setRadius: (radius: number) => void;
 	setBackgroundStrategy: (strategy: BackgroundStrategy) => void;
@@ -94,6 +98,7 @@ interface ThemeDesignerContextValue {
 
 type ThemeDesignerAction =
 	| { type: "SET_PRIMARY"; value: string }
+	| { type: "SET_SECONDARY"; value: string | null }
 	| { type: "SET_HARMONY"; value: HarmonyType }
 	| { type: "SET_RADIUS"; value: number }
 	| { type: "SET_BACKGROUND_STRATEGY"; value: BackgroundStrategy }
@@ -114,10 +119,16 @@ const ThemeDesignerContext = createContext<
 
 function buildPreviewKey(
 	primaryHex: string,
+	secondaryHex: string | null,
 	harmony: HarmonyType,
 	backgroundStrategy: BackgroundStrategy,
 ): string {
-	return [primaryHex.toLowerCase(), harmony, backgroundStrategy].join("-");
+	return [
+		primaryHex.toLowerCase(),
+		secondaryHex?.toLowerCase() ?? "auto",
+		harmony,
+		backgroundStrategy,
+	].join("-");
 }
 
 export function createInitialState(
@@ -125,6 +136,7 @@ export function createInitialState(
 ): ThemeDesignerState {
 	const inputs: ThemeDesignerInputs = {
 		primaryHex: DEFAULT_PRIMARY_HEX,
+		secondaryHex: null,
 		harmony: DEFAULT_HARMONY,
 		radius: DEFAULT_RADIUS,
 		backgroundStrategy: DEFAULT_BACKGROUND_STRATEGY,
@@ -137,6 +149,7 @@ export function createInitialState(
 		previewKey: defaultTheme
 			? buildPreviewKey(
 					DEFAULT_PRIMARY_HEX,
+					null,
 					DEFAULT_HARMONY,
 					DEFAULT_BACKGROUND_STRATEGY,
 				)
@@ -144,6 +157,7 @@ export function createInitialState(
 		applied: {
 			theme: null,
 			primaryHex: DEFAULT_PRIMARY_HEX,
+			secondaryHex: null,
 			harmony: DEFAULT_HARMONY,
 			radius: DEFAULT_RADIUS,
 			backgroundStrategy: DEFAULT_BACKGROUND_STRATEGY,
@@ -163,6 +177,14 @@ export function themeDesignerReducer(
 				...state,
 				status: "previewing",
 				inputs: { ...state.inputs, primaryHex: action.value },
+			};
+		}
+		case "SET_SECONDARY": {
+			if (action.value === state.inputs.secondaryHex) return state;
+			return {
+				...state,
+				status: "previewing",
+				inputs: { ...state.inputs, secondaryHex: action.value },
 			};
 		}
 		case "SET_HARMONY": {
@@ -216,6 +238,7 @@ export function themeDesignerReducer(
 				applied: {
 					theme: action.theme,
 					primaryHex: state.inputs.primaryHex,
+					secondaryHex: state.inputs.secondaryHex,
 					harmony: state.inputs.harmony,
 					radius: state.inputs.radius,
 					backgroundStrategy: state.inputs.backgroundStrategy,
@@ -236,6 +259,7 @@ export function computeHasPendingChanges(state: ThemeDesignerState): boolean {
 
 	return (
 		applied.primaryHex !== inputs.primaryHex ||
+		applied.secondaryHex !== inputs.secondaryHex ||
 		applied.harmony !== inputs.harmony ||
 		applied.radius !== inputs.radius ||
 		applied.backgroundStrategy !== inputs.backgroundStrategy
@@ -341,6 +365,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 
 		const previewKey = buildPreviewKey(
 			state.inputs.primaryHex,
+			state.inputs.secondaryHex,
 			state.inputs.harmony,
 			state.inputs.backgroundStrategy,
 		);
@@ -364,7 +389,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 			try {
 				const theme = generateThemeFromInputs(
 					state.inputs.primaryHex,
-					null,
+					state.inputs.secondaryHex,
 					state.inputs.harmony,
 					generationOptions,
 				);
@@ -389,13 +414,16 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 		return () => {
 			cancelled = true;
 		};
+		// Note: previewTheme and previewKey are intentionally NOT included in deps
+		// They are only used for caching/deduplication, not for triggering the effect.
+		// Including them would cause unnecessary re-runs after PREVIEW_SUCCESS.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [
 		state.status,
 		state.inputs.primaryHex,
+		state.inputs.secondaryHex,
 		state.inputs.harmony,
 		state.inputs.backgroundStrategy,
-		state.previewTheme,
-		state.previewKey,
 	]);
 
 	useEffect(() => {
@@ -416,6 +444,10 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 
 	const setPrimary = useCallback((hex: string) => {
 		dispatch({ type: "SET_PRIMARY", value: hex });
+	}, []);
+
+	const setSecondary = useCallback((hex: string | null) => {
+		dispatch({ type: "SET_SECONDARY", value: hex });
 	}, []);
 
 	const setHarmony = useCallback((harmony: HarmonyType) => {
@@ -446,7 +478,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 			try {
 				themeToApply = generateThemeFromInputs(
 					state.inputs.primaryHex,
-					null,
+					state.inputs.secondaryHex,
 					state.inputs.harmony,
 					generationOptions,
 				);
@@ -467,11 +499,16 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 			const isDark = document.documentElement.classList.contains("dark");
 			applyThemeToDOM(themeToApply.tokens, state.inputs.radius, isDark);
 		}
-		dispatch({ type: "APPLY_SUCCESS", theme: themeToApply });
+		// Use requestAnimationFrame to ensure React sees the "applying" state
+		// before transitioning to "idle" (enables confetti trigger)
+		requestAnimationFrame(() => {
+			dispatch({ type: "APPLY_SUCCESS", theme: themeToApply });
+		});
 	}, [
 		state.status,
 		state.previewTheme,
 		state.inputs.primaryHex,
+		state.inputs.secondaryHex,
 		state.inputs.harmony,
 		state.inputs.backgroundStrategy,
 		state.inputs.radius,
@@ -487,7 +524,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 			try {
 				return generateThemeFromInputs(
 					state.inputs.primaryHex,
-					null,
+					state.inputs.secondaryHex,
 					harmonyType,
 					{
 						backgroundStrategy: state.inputs.backgroundStrategy,
@@ -497,7 +534,11 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 				return null;
 			}
 		},
-		[state.inputs.primaryHex, state.inputs.backgroundStrategy],
+		[
+			state.inputs.primaryHex,
+			state.inputs.secondaryHex,
+			state.inputs.backgroundStrategy,
+		],
 	);
 
 	const hasPendingChanges = useMemo(
@@ -508,6 +549,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 	const value = useMemo<ThemeDesignerContextValue>(
 		() => ({
 			primaryHex: state.inputs.primaryHex,
+			secondaryHex: state.inputs.secondaryHex,
 			harmony: state.inputs.harmony,
 			radius: state.inputs.radius,
 			backgroundStrategy: state.inputs.backgroundStrategy,
@@ -519,6 +561,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 			error: state.error,
 			hasPendingChanges,
 			setPrimary,
+			setSecondary,
 			setHarmony,
 			setRadius,
 			setBackgroundStrategy,
@@ -531,6 +574,7 @@ export function ThemeDesignerProvider({ children }: { children: ReactNode }) {
 			state,
 			hasPendingChanges,
 			setPrimary,
+			setSecondary,
 			setHarmony,
 			setRadius,
 			setBackgroundStrategy,

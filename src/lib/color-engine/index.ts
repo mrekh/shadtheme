@@ -108,6 +108,8 @@ function validateThemeContrast(tokens: ThemeTokens): ContrastWarning[] {
 		["sidebar-foreground", "sidebar"],
 		["sidebar-primary-foreground", "sidebar-primary"],
 		["sidebar-accent-foreground", "sidebar-accent"],
+		["sidebar-border", "sidebar"],
+		["sidebar-ring", "sidebar"],
 	];
 
 	// Check both light and dark themes

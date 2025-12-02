@@ -1,5 +1,5 @@
 import { IconCheck, IconInfoCircle, IconPlus } from "@tabler/icons-react";
-import { ArrowUpIcon, Search } from "lucide-react";
+import { ArrowUpIcon, SearchIcon } from "lucide-react";
 
 import {
 	DropdownMenu,
@@ -28,7 +28,7 @@ export function InputGroupDemo() {
 			<InputGroup>
 				<InputGroupInput placeholder="Search..." />
 				<InputGroupAddon>
-					<Search />
+					<SearchIcon />
 				</InputGroupAddon>
 				<InputGroupAddon align="inline-end">12 results</InputGroupAddon>
 			</InputGroup>

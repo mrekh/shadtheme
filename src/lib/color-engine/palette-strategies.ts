@@ -66,47 +66,6 @@ export const HARMONY_CONFIGS: Record<HarmonyType, HarmonyConfig> = {
 };
 
 /**
- * Build a tone scale from a base color
- * @param base - Base color in OKLCH
- * @param steps - Number of steps in the scale (should be odd, center is base)
- * @param lightnessRange - Range of lightness adjustment (e.g., 0.3 means ±30% lightness)
- */
-export function buildToneScale(
-	base: LocalOklch,
-	steps: number = 9,
-	lightnessRange: number = 0.4,
-): LocalOklch[] {
-	const clamped = clampOklch(base);
-	const center = Math.floor(steps / 2);
-	const scale: LocalOklch[] = [];
-
-	for (let i = 0; i < steps; i++) {
-		const delta = (i - center) / center;
-		const lightnessDelta = delta * lightnessRange;
-		scale.push(clampOklch({ ...clamped, l: clamped.l + lightnessDelta }));
-	}
-
-	return scale;
-}
-
-/**
- * Shift chroma while preserving lightness and hue
- */
-export function shiftChroma(color: LocalOklch, delta: number): LocalOklch {
-	return clampOklch({
-		...color,
-		c: Math.max(0, Math.min(0.4, color.c + delta)),
-	});
-}
-
-/**
- * Shift hue within a band (useful for analogous colors)
- */
-export function shiftHueBand(color: LocalOklch, delta: number): LocalOklch {
-	return adjustHue(color, delta);
-}
-
-/**
  * Generate palette anchors based on input colors and harmony type
  */
 export function generatePaletteAnchors(
@@ -172,14 +131,14 @@ export function generatePaletteAnchors(
 		}
 
 		case "tetradic": {
-			const tet1 = adjustHue(primary, 90);
+			// True tetradic (rectangle) uses 60°/180°/240° offsets
+			const tet1 = adjustHue(primary, 60);
 			const tet2 = adjustHue(primary, 180);
-			const tet3 = adjustHue(primary, 270);
 			return {
 				primary: clampOklch(primary),
 				secondary: clampOklch(adjustLightness(tet1, 0.1)),
 				accent: clampOklch(tet2),
-				destructive: clampOklch(tet3),
+				destructive: generateDestructiveColor(primary),
 			};
 		}
 
@@ -195,14 +154,14 @@ export function generatePaletteAnchors(
 		}
 
 		case "square": {
+			// Square uses 90°/180°/270° offsets but keeps semantic destructive
 			const square1 = adjustHue(primary, 90);
 			const square2 = adjustHue(primary, 180);
-			const square3 = adjustHue(primary, 270);
 			return {
 				primary: clampOklch(primary),
 				secondary: clampOklch(adjustLightness(square1, 0.1)),
 				accent: clampOklch(square2),
-				destructive: clampOklch(square3),
+				destructive: generateDestructiveColor(primary),
 			};
 		}
 
@@ -242,11 +201,24 @@ function generateAccentFromPair(
 
 /**
  * Generate destructive color (red/orange tones)
- * If primary is already red-ish, shift it; otherwise use standard red
+ * If primary is already red/orange (hue 0-50° or 350-360°), shift to magenta
+ * to maintain semantic distinction
  */
 function generateDestructiveColor(primary: LocalOklch): LocalOklch {
-	const baseHue = 25; // warm red/orange
 	const clampedPrimary = clampOklch(primary);
+	const primaryHue = clampedPrimary.h ?? 0;
+
+	// Detect if primary is in red/orange range (hue 0-50° or 350-360°)
+	const isRedOrangePrimary =
+		(primaryHue >= 0 && primaryHue <= 50) || primaryHue >= 350;
+
+	let destructiveHue = 25; // Default warm red/orange
+
+	if (isRedOrangePrimary) {
+		// If primary is orange (30-50°), use pure red (10°)
+		// If primary is red (0-30° or 350-360°), shift to magenta (340°)
+		destructiveHue = primaryHue >= 30 && primaryHue <= 50 ? 10 : 340;
+	}
 
 	const targetLightness = clamp(clampedPrimary.l * 0.8 + 0.2, 0.4, 0.72);
 	const targetChroma = clamp(clampedPrimary.c + 0.12, 0.18, 0.3);
@@ -255,6 +227,6 @@ function generateDestructiveColor(primary: LocalOklch): LocalOklch {
 		mode: "oklch",
 		l: targetLightness,
 		c: targetChroma,
-		h: baseHue,
+		h: destructiveHue,
 	});
 }

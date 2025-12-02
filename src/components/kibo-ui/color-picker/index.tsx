@@ -34,11 +34,14 @@ type ColorPickerContextValue = {
 	lightness: number;
 	alpha: number;
 	mode: string;
+	isInteracting: boolean;
 	setHue: (hue: number) => void;
 	setSaturation: (saturation: number) => void;
 	setLightness: (lightness: number) => void;
 	setAlpha: (alpha: number) => void;
 	setMode: (mode: string) => void;
+	setIsInteracting: (value: boolean) => void;
+	markInternalChanges: () => void;
 };
 
 const ColorPickerContext = createContext<ColorPickerContextValue | undefined>(
@@ -108,16 +111,38 @@ export const ColorPicker = ({
 	const [lightness, setLightness] = useState(initialChannels.l);
 	const [alpha, setAlpha] = useState(initialChannels.a);
 	const [mode, setMode] = useState("hex");
+	const [isInteracting, setIsInteracting] = useState(false);
+
+	// Track the last processed value to avoid feedback loops
+	const lastProcessedValueRef = useRef<string | null>(null);
+	// Track if internal state was changed by user interaction
+	const hasInternalChangesRef = useRef(false);
 
 	/* eslint-disable react-hooks/set-state-in-effect */
-	// Update color when controlled value changes
+	// Update color when controlled value changes (only when not interacting)
 	useEffect(() => {
+		// Skip sync while user is actively interacting
+		if (isInteracting) return;
+
+		// Skip if we have pending internal changes (user just finished dragging)
+		if (hasInternalChangesRef.current) {
+			hasInternalChangesRef.current = false;
+			return;
+		}
+
+		// Normalize value to string for comparison
+		const valueStr = typeof value === "string" ? value : JSON.stringify(value);
+
+		// Skip if this is the same value we already processed
+		if (lastProcessedValueRef.current === valueStr) return;
+		lastProcessedValueRef.current = valueStr;
+
 		const next = getColorChannels(value, defaultValue);
 		setHue(next.h);
 		setSaturation(next.s);
 		setLightness(next.l);
 		setAlpha(next.a);
-	}, [value, defaultValue]);
+	}, [value, defaultValue, isInteracting]);
 	/* eslint-enable react-hooks/set-state-in-effect */
 
 	// Notify parent of changes
@@ -125,10 +150,14 @@ export const ColorPicker = ({
 		if (onChange) {
 			const color = Color.hsl(hue, saturation, lightness).alpha(alpha / 100);
 			const rgba = color.rgb().array();
-
 			onChange([rgba[0], rgba[1], rgba[2], alpha / 100]);
 		}
 	}, [hue, saturation, lightness, alpha, onChange]);
+
+	// Callback to mark that internal changes were made (prevents sync reset)
+	const markInternalChanges = useCallback(() => {
+		hasInternalChangesRef.current = true;
+	}, []);
 
 	return (
 		<ColorPickerContext.Provider
@@ -138,11 +167,14 @@ export const ColorPicker = ({
 				lightness,
 				alpha,
 				mode,
+				isInteracting,
 				setHue,
 				setSaturation,
 				setLightness,
 				setAlpha,
 				setMode,
+				setIsInteracting,
+				markInternalChanges,
 			}}
 		>
 			<div
@@ -161,8 +193,15 @@ export const ColorPickerSelection = memo(
 		const [isDragging, setIsDragging] = useState(false);
 		const [positionX, setPositionX] = useState(0);
 		const [positionY, setPositionY] = useState(0);
-		const { hue, saturation, lightness, setSaturation, setLightness } =
-			useColorPicker();
+		const {
+			hue,
+			saturation,
+			lightness,
+			setSaturation,
+			setLightness,
+			setIsInteracting,
+			markInternalChanges,
+		} = useColorPicker();
 
 		const backgroundGradient = useMemo(() => {
 			return `linear-gradient(0deg, rgba(0,0,0,1), rgba(0,0,0,0)),
@@ -196,7 +235,11 @@ export const ColorPickerSelection = memo(
 		);
 
 		useEffect(() => {
-			const handlePointerUp = () => setIsDragging(false);
+			const handlePointerUp = () => {
+				setIsDragging(false);
+				markInternalChanges();
+				setIsInteracting(false);
+			};
 
 			if (isDragging) {
 				window.addEventListener("pointermove", handlePointerMove);
@@ -207,7 +250,7 @@ export const ColorPickerSelection = memo(
 				window.removeEventListener("pointermove", handlePointerMove);
 				window.removeEventListener("pointerup", handlePointerUp);
 			};
-		}, [isDragging, handlePointerMove]);
+		}, [isDragging, handlePointerMove, setIsInteracting, markInternalChanges]);
 
 		/* eslint-disable react-hooks/set-state-in-effect */
 		// Keep pointer position in sync with external updates
@@ -228,6 +271,7 @@ export const ColorPickerSelection = memo(
 				onPointerDown={(e) => {
 					e.preventDefault();
 					setIsDragging(true);
+					setIsInteracting(true);
 					handlePointerMove(e.nativeEvent);
 				}}
 				ref={containerRef}
@@ -257,13 +301,19 @@ export const ColorPickerHue = ({
 	className,
 	...props
 }: ColorPickerHueProps) => {
-	const { hue, setHue } = useColorPicker();
+	const { hue, setHue, setIsInteracting, markInternalChanges } =
+		useColorPicker();
 
 	return (
 		<Slider.Root
 			className={cn("relative flex h-4 w-full touch-none", className)}
 			max={360}
 			onValueChange={([hue]) => setHue(hue)}
+			onPointerDown={() => setIsInteracting(true)}
+			onPointerUp={() => {
+				markInternalChanges();
+				setIsInteracting(false);
+			}}
 			step={1}
 			value={[hue]}
 			{...props}
@@ -282,13 +332,19 @@ export const ColorPickerAlpha = ({
 	className,
 	...props
 }: ColorPickerAlphaProps) => {
-	const { alpha, setAlpha } = useColorPicker();
+	const { alpha, setAlpha, setIsInteracting, markInternalChanges } =
+		useColorPicker();
 
 	return (
 		<Slider.Root
 			className={cn("relative flex h-4 w-full touch-none", className)}
 			max={100}
 			onValueChange={([alpha]) => setAlpha(alpha)}
+			onPointerDown={() => setIsInteracting(true)}
+			onPointerUp={() => {
+				markInternalChanges();
+				setIsInteracting(false);
+			}}
 			step={1}
 			value={[alpha]}
 			{...props}

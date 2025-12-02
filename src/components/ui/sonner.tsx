@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import {
 	CircleCheckIcon,
 	InfoIcon,
@@ -9,6 +11,11 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+
+// Extend CSSProperties to support CSS custom properties
+type ToasterStyles = CSSProperties & {
+	[key: `--${string}`]: string;
+};
 
 const Toaster = ({ ...props }: ToasterProps) => {
 	const { theme = "system" } = useTheme();
@@ -30,7 +37,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 					"--normal-text": "var(--popover-foreground)",
 					"--normal-border": "var(--border)",
 					"--border-radius": "var(--radius)",
-				} as React.CSSProperties
+				} as ToasterStyles
 			}
 			{...props}
 		/>

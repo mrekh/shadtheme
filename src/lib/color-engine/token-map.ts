@@ -253,6 +253,7 @@ function generateRing(primary: LocalOklch, isDark: boolean): LocalOklch {
 
 /**
  * Generate chart colors (5 distinct colors with good contrast)
+ * Colors adapt to the primary color's lightness and chroma characteristics
  */
 function generateChartColors(
 	primary: LocalOklch,
@@ -265,39 +266,46 @@ function generateChartColors(
 	"chart-5": LocalOklch;
 } {
 	const baseHue = primary.h ?? 0;
+	const baseL = primary.l;
+	const baseC = primary.c;
 	const hueSteps = [0, 60, 120, 180, 240]; // Spread around color wheel
 
+	// Adaptive lightness based on primary - ensures variety while staying visible
+	// Dark mode: lighter charts for visibility; Light mode: darker charts for contrast
+	const baseLightDark = Math.max(0.4, Math.min(0.75, baseL + 0.15));
+	const baseLightLight = Math.max(0.35, Math.min(0.8, baseL - 0.1));
+
+	// Adaptive chroma - blend with primary's chroma for cohesive palette
+	const baseChromaDark = Math.max(0.15, Math.min(0.28, baseC * 0.8 + 0.1));
+	const baseChromaLight = Math.max(0.1, Math.min(0.3, baseC * 0.6 + 0.08));
+
+	// Lightness offsets for visual distinction between chart colors
+	const lOffsetsDark = [0, 0.15, 0.22, 0.08, 0.12];
+	const lOffsetsLight = [0.35, 0.1, 0.02, -0.02, -0.1];
+
+	// Chroma multipliers for variety
+	const cMultipliers = [1.0, 0.85, 0.95, 1.1, 1.0];
+
+	const generateChartColor = (index: number): LocalOklch => {
+		const lBase = isDark ? baseLightDark : baseLightLight;
+		const cBase = isDark ? baseChromaDark : baseChromaLight;
+		const lOffset = isDark ? lOffsetsDark[index] : lOffsetsLight[index];
+		const cMult = cMultipliers[index];
+
+		return clampOklch({
+			mode: "oklch",
+			l: Math.max(0.3, Math.min(0.85, lBase + lOffset)),
+			c: Math.max(0.08, Math.min(0.32, cBase * cMult)),
+			h: (baseHue + hueSteps[index]) % 360,
+		});
+	};
+
 	return {
-		"chart-1": clampOklch({
-			mode: "oklch",
-			l: isDark ? 0.488 : 0.811,
-			c: isDark ? 0.243 : 0.111,
-			h: (baseHue + hueSteps[0]) % 360,
-		}),
-		"chart-2": clampOklch({
-			mode: "oklch",
-			l: isDark ? 0.696 : 0.606,
-			c: isDark ? 0.17 : 0.25,
-			h: (baseHue + hueSteps[1]) % 360,
-		}),
-		"chart-3": clampOklch({
-			mode: "oklch",
-			l: isDark ? 0.769 : 0.541,
-			c: isDark ? 0.188 : 0.281,
-			h: (baseHue + hueSteps[2]) % 360,
-		}),
-		"chart-4": clampOklch({
-			mode: "oklch",
-			l: isDark ? 0.627 : 0.491,
-			c: isDark ? 0.265 : 0.27,
-			h: (baseHue + hueSteps[3]) % 360,
-		}),
-		"chart-5": clampOklch({
-			mode: "oklch",
-			l: isDark ? 0.645 : 0.432,
-			c: isDark ? 0.246 : 0.232,
-			h: (baseHue + hueSteps[4]) % 360,
-		}),
+		"chart-1": generateChartColor(0),
+		"chart-2": generateChartColor(1),
+		"chart-3": generateChartColor(2),
+		"chart-4": generateChartColor(3),
+		"chart-5": generateChartColor(4),
 	};
 }
 
@@ -352,13 +360,13 @@ function generateSidebarColors(
 				h: primaryHue,
 			});
 	const sidebarAccentForeground = generateForeground(sidebarAccent);
+	// Adaptive sidebar border based on sidebar background
 	const sidebarBorder = isDark
 		? clampOklch({
 				mode: "oklch",
-				l: 1,
-				c: 0,
-				h: 0,
-				alpha: 0.1,
+				l: Math.min(0.45, sidebarBg.l + 0.18), // Relative to sidebar bg
+				c: Math.min(0.015, primary.c * 0.25),
+				h: primaryHue,
 			})
 		: clampOklch({
 				mode: "oklch",
@@ -498,6 +506,14 @@ export function enforceTokenContrast(
 			targetRatio: 4.5,
 			preferLightness: true,
 		});
+
+		if (!result.success) {
+			console.warn(
+				`[color-engine] Contrast enforcement failed for ${fgToken}/${bgToken}. ` +
+					`Target ratio 4.5:1 may not be met after ${result.iterations} iterations.`,
+			);
+		}
+
 		fixed[fgToken] = result.foreground;
 	}
 

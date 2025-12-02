@@ -1,10 +1,13 @@
 "use client";
 
 import { GithubIcon } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { ThemeSwitcher } from "@/components/kibo-ui/theme-switcher";
 
 export function SiteHeader() {
+	const { theme, setTheme } = useTheme();
+
 	return (
 		<header className="flex h-12 shrink-0 items-center gap-2 border-b">
 			<a
@@ -25,7 +28,10 @@ export function SiteHeader() {
 					>
 						<GithubIcon className="h-5 w-5" />
 					</a>
-					<ThemeSwitcher />
+					<ThemeSwitcher
+						value={theme as "light" | "dark" | "system"}
+						onChange={setTheme}
+					/>
 				</div>
 			</div>
 		</header>

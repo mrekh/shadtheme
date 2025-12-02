@@ -14,7 +14,7 @@ type SidebarShellStyle = CSSProperties & {
 const shellStyle: SidebarShellStyle = {
 	"--sidebar-width": "calc(var(--spacing) * 60)",
 	"--header-height": "calc(var(--spacing) * 12)",
-	borderRadius: "var(--radius)",
+	borderRadius: "calc(var(--radius) * 1.5)",
 };
 
 const insetStyle: CSSProperties = {
@@ -38,9 +38,21 @@ export function DashboardShell({
 }: DashboardShellProps) {
 	return (
 		<SidebarProvider
-			disableKeyboardShortcut
 			className={cn(
-				"dashboard-shell bg-sidebar text-sidebar-foreground border-border/70 [&_[data-sidebar=sidebar]]:bg-sidebar [&_[data-sidebar=sidebar]]:text-sidebar-foreground relative overflow-hidden border p-3 shadow-sm md:p-4 [&_[data-slot=sidebar-container]]:!relative [&_[data-slot=sidebar-container]]:inset-0 [&_[data-slot=sidebar-container]]:w-full [&_[data-slot=sidebar-gap]]:hidden",
+				// Base styles
+				"dashboard-shell relative overflow-hidden",
+				// Colors and theming
+				"bg-sidebar text-sidebar-foreground",
+				"[&_[data-sidebar=sidebar]]:bg-sidebar [&_[data-sidebar=sidebar]]:text-sidebar-foreground",
+				// Border and shadow
+				"border-border/50 border shadow-md",
+				// Padding
+				"p-3 md:p-4",
+				// Sidebar container overrides for embedded mode
+				"[&_[data-slot=sidebar-container]]:!relative",
+				"[&_[data-slot=sidebar-container]]:inset-0",
+				"[&_[data-slot=sidebar-container]]:w-full",
+				"[&_[data-slot=sidebar-gap]]:hidden",
 				className,
 			)}
 			style={shellStyle}
@@ -48,7 +60,10 @@ export function DashboardShell({
 			{sidebar}
 			<SidebarInset
 				className={cn(
-					"bg-card border-border/60 flex w-full flex-1 border p-3 md:p-4",
+					"bg-card flex w-full flex-1",
+					"border-border/40 border",
+					"p-3 md:p-4",
+					"shadow-sm",
 					insetClassName,
 				)}
 				style={insetStyle}

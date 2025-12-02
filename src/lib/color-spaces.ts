@@ -2,6 +2,21 @@ import { type Oklch, converter, parse } from "culori";
 
 export type { Oklch };
 
+/** Target color gamut for theme generation */
+export type ColorGamut = "srgb" | "p3";
+
+/** Default gamut - Display P3 for vibrant colors (93% browser support) */
+export const DEFAULT_GAMUT: ColorGamut = "p3";
+
+/**
+ * Maximum chroma values per gamut
+ * P3 allows for more vibrant colors than sRGB
+ */
+const GAMUT_MAX_CHROMA: Record<ColorGamut, number> = {
+	srgb: 0.33,
+	p3: 0.45,
+};
+
 /**
  * Local OKLCH type for internal use
  */
@@ -52,13 +67,20 @@ export function formatOklchCss(color: Oklch | LocalOklch): string {
 }
 
 /**
- * Clamp OKLCH values to valid ranges
+ * Clamp OKLCH values to valid ranges with gamut-aware limits
+ * @param color - Input color in OKLCH
+ * @param gamut - Target gamut ('p3' for vibrant, 'srgb' for max compatibility)
  */
-export function clampOklch(color: Oklch | LocalOklch): LocalOklch {
+export function clampOklch(
+	color: Oklch | LocalOklch,
+	gamut: ColorGamut = DEFAULT_GAMUT,
+): LocalOklch {
+	const maxChroma = GAMUT_MAX_CHROMA[gamut];
+
 	return {
 		mode: "oklch",
 		l: Math.max(0, Math.min(1, color.l ?? 0)),
-		c: Math.max(0, Math.min(0.4, color.c ?? 0)),
+		c: Math.max(0, Math.min(maxChroma, color.c ?? 0)),
 		h: color.h ?? 0,
 		alpha: "alpha" in color ? color.alpha : undefined,
 	};

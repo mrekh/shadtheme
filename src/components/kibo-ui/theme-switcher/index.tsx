@@ -1,59 +1,68 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { Monitor, Moon, Sun } from "lucide-react";
+import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
 import { motion } from "motion/react";
-import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 
 const themes = [
 	{
 		key: "system",
-		icon: Monitor,
+		icon: MonitorIcon,
 		label: "System theme",
 	},
 	{
 		key: "light",
-		icon: Sun,
+		icon: SunIcon,
 		label: "Light theme",
 	},
 	{
 		key: "dark",
-		icon: Moon,
+		icon: MoonIcon,
 		label: "Dark theme",
 	},
 ];
 
 export type ThemeSwitcherProps = {
+	value?: "light" | "dark" | "system";
+	onChange?: (theme: "light" | "dark" | "system") => void;
+	defaultValue?: "light" | "dark" | "system";
 	className?: string;
 };
 
-export const ThemeSwitcher = ({ className }: ThemeSwitcherProps) => {
-	const { theme, setTheme } = useTheme();
+export const ThemeSwitcher = ({
+	value,
+	onChange,
+	defaultValue = "system",
+	className,
+}: ThemeSwitcherProps) => {
+	const [theme, setTheme] = useControllableState({
+		defaultProp: defaultValue,
+		prop: value,
+		onChange,
+	});
 	const [mounted, setMounted] = useState(false);
 
-	// Prevent hydration mismatch
+	const handleThemeClick = useCallback(
+		(themeKey: "light" | "dark" | "system") => {
+			setTheme(themeKey);
+		},
+		[setTheme],
+	);
+
+	// Prevent hydration mismatch - this is intentional for SSR safety
+	/* eslint-disable react-hooks/set-state-in-effect */
 	useEffect(() => {
-		startTransition(() => {
-			setMounted(true);
-		});
+		setMounted(true);
 	}, []);
+	/* eslint-enable react-hooks/set-state-in-effect */
 
 	if (!mounted) {
-		return (
-			<div
-				className={cn(
-					"bg-muted/60 h-8 w-20 animate-pulse rounded-full",
-					className,
-				)}
-				aria-hidden="true"
-			/>
-		);
+		return null;
 	}
-
-	const currentTheme = theme || "system";
 
 	return (
 		<div
@@ -63,19 +72,19 @@ export const ThemeSwitcher = ({ className }: ThemeSwitcherProps) => {
 			)}
 		>
 			{themes.map(({ key, icon: Icon, label }) => {
-				const isActive = currentTheme === key;
+				const isActive = theme === key;
 
 				return (
 					<button
 						aria-label={label}
 						className="relative h-6 w-6 rounded-full"
 						key={key}
-						onClick={() => setTheme(key)}
+						onClick={() => handleThemeClick(key as "light" | "dark" | "system")}
 						type="button"
 					>
 						{isActive && (
 							<motion.div
-								className="bg-primary/20 ring-primary/40 dark:bg-primary/30 absolute inset-0 rounded-full ring-1 ring-inset"
+								className="bg-secondary absolute inset-0 rounded-full"
 								layoutId="activeTheme"
 								transition={{ type: "spring", duration: 0.5 }}
 							/>
